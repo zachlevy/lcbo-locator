@@ -8,14 +8,17 @@ $locations = array();
 // for each product
 foreach ($products as $product) {
   $url = $root . "/products/" . $product . "/stores?per_page=100";
-  $locations = getInventory($url, $product, $locations);
+  $locations = getInventory($root, $url, $product, $locations);
 }
 
 // get the inventory from lcboapi
-function getInventory ($url, $product, $locations) {
+function getInventory ($root, $url, $product, $locations) {
   $json_stores = file_get_contents($url);
   $stores = json_decode($json_stores, TRUE);
   $locations = addLocations($stores, $product, $locations);
+  if (!$stores["pager"]["is_final_page"] && !is_null($stores["pager"]["next_page_path"])) {
+    $locations = getInventory($root, $root . $stores["pager"]["next_page_path"], $product, $locations);
+  }
   return $locations;
 }
 
@@ -65,9 +68,9 @@ function checkEmpties ($locations, $products) {
   }
   return $locations;
 }
-
+#print ("<br />LOCATIONS<br />" . $locations);
 $locations = checkEmpties($locations, $products);
-
+#print ("<br />LOCATIONS<br />" . $locations);
 $json_locations = json_encode($locations);
 
 echo $json_locations;
